@@ -18,6 +18,19 @@ import { createClient } from '@/lib/supabase/client';
 import { FileText, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { ActivityLog } from '@/types';
+import { cn } from '@/lib/utils';
+
+const ActionColors: Record<string, string> = {
+    'REPORT_SUBMITTED': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20',
+    'PROFILE_COMPLETED': 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20',
+    'CHILLA_STARTED': 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:bg-indigo-500/20',
+    'CHILLA_COMPLETED': 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20',
+    'SUMMARY_GENERATED': 'bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500/20',
+    'SUMMARY_DELIVERED': 'bg-pink-500/10 text-pink-500 border-pink-500/20 hover:bg-pink-500/20',
+    'INVITE_SENT': 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20 hover:bg-cyan-500/20',
+    'BROADCAST_SENT': 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20',
+    'SALIK_REASSIGNED': 'bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20',
+};
 
 export default function ActivityLogsPage() {
     const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -86,8 +99,11 @@ export default function ActivityLogsPage() {
                                                 {log.user?.full_name || 'System'}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline" className="text-xs">
-                                                    {log.action}
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn("text-[10px] tracking-wider font-semibold", ActionColors[log.action] || "bg-secondary/50")}
+                                                >
+                                                    {log.action.replace(/_/g, ' ')}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground text-sm max-w-[300px] truncate">

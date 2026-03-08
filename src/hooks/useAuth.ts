@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile } from '@/types';
-import type { User } from '@supabase/supabase-js';
+import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 export function useAuth() {
     const [user, setUser] = useState<User | null>(null);
@@ -44,7 +44,7 @@ export function useAuth() {
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
             if (session?.user) {
                 setUser(session.user);
                 const { data: profileData } = await supabase

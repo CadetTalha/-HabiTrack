@@ -5,13 +5,16 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/signup', '/auth/callback'];
+const PUBLIC_ROUTES = ['/login', '/auth/callback'];
+
+// Routes that all authenticated users can access
+const SHARED_ROUTES = ['/profile', '/messages'];
 
 // Role-based route access mapping
 const ROLE_ROUTES: Record<string, string[]> = {
-    admin: ['/admin'],
-    murabbi: ['/murabbi'],
-    salik: ['/salik'],
+    admin: ['/admin', ...SHARED_ROUTES],
+    murabbi: ['/murabbi', ...SHARED_ROUTES],
+    salik: ['/salik', ...SHARED_ROUTES],
 };
 
 export async function middleware(request: NextRequest) {
@@ -42,14 +45,26 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
     }
 
-    // Get user role from profile
+    // Get user profile including completion status
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, is_profile_complete')
         .eq('id', user.id)
         .single();
 
     const role = profile?.role;
+    const isProfileComplete = profile?.is_profile_complete ?? false;
+
+    // Gatekeeper: Force profile completion for invited users
+    if (!isProfileComplete && pathname !== '/complete-profile') {
+        return NextResponse.redirect(new URL('/complete-profile', request.url));
+    }
+
+    // Prevent double-setup: If complete, block access to /complete-profile
+    if (isProfileComplete && pathname === '/complete-profile') {
+        const targetDashboard = role ? `/${role}` : '/';
+        return NextResponse.redirect(new URL(targetDashboard, request.url));
+    }
 
     // If on root, redirect to role-specific dashboard
     if (pathname === '/') {

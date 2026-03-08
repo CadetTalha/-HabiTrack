@@ -25,11 +25,16 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const summary = await generateChillaSummary({
             salikName: body.salikName || 'Salik',
+            chillaNumber: body.chillaNumber || 1,
             totalSubmissions: body.totalSubmissions || 0,
-            averagePerformance: body.averagePerformance || 0,
-            mostMissedTask: body.mostMissedTask || null,
-            streakRecord: body.streakRecord || 0,
-            performanceTrend: body.performanceTrend || [],
+            completionPercentage: body.completionPercentage || 0,
+            weekAverages: body.weekAverages || [0, 0, 0, 0],
+            categoryAverages: body.categoryAverages || {},
+            topHabits: body.topHabits || [],
+            missedHabits: body.missedHabits || [],
+            bestStreak: body.bestStreak || 0,
+            salikNotesSnapshot: body.salikNotesSnapshot || '',
+            murabbiNotesSnapshot: body.murabbiNotesSnapshot || null,
         });
 
         return NextResponse.json({ summary });

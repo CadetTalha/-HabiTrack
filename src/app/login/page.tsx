@@ -12,12 +12,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Loader2, Moon, Star } from 'lucide-react';
+import { Loader2, Moon, Star, Eye, EyeOff } from 'lucide-react';
+import { FaMosque } from 'react-icons/fa';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const supabase = createClient();
@@ -119,7 +121,7 @@ export default function LoginPage() {
                             transition={{ duration: 0.5, delay: 0.2 }}
                             className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center"
                         >
-                            <span className="text-3xl">🕌</span>
+                            <FaMosque className="text-4xl text-primary" />
                         </motion.div>
                         <CardTitle className="text-2xl font-bold">
                             <span className="gradient-text">HabiTrack AI</span>
@@ -146,19 +148,33 @@ export default function LoginPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="password" className="text-sm font-medium">
-                                    Password
-                                </Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="h-11 bg-background/50"
-                                    disabled={loading}
-                                    required
-                                />
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password" className="text-sm font-medium">
+                                        Password
+                                    </Label>
+                                    <a href="#" className="text-sm text-primary hover:underline font-medium">
+                                        Forgot Password?
+                                    </a>
+                                </div>
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="h-11 bg-background/50 pr-10"
+                                        disabled={loading}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
                             </div>
                             <Button
                                 type="submit"
@@ -175,11 +191,11 @@ export default function LoginPage() {
                                 )}
                             </Button>
                         </form>
-                        <p className="text-center text-sm text-muted-foreground mt-6">
-                            Don&apos;t have an account?{' '}
-                            <a href="/signup" className="text-primary hover:underline font-medium">
-                                Sign Up
-                            </a>
+                        <p className="text-center text-sm text-muted-foreground mt-6 flex flex-col items-center gap-1.5 border-t border-border/50 pt-5">
+                            <span className="opacity-80">Don&apos;t have an account?</span>
+                            <span className="font-medium text-foreground bg-primary/10 px-3 py-1 rounded-full text-primary border border-primary/20">
+                                Contact your administrator to receive an invite
+                            </span>
                         </p>
                     </CardContent>
                 </Card>

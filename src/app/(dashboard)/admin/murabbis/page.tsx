@@ -9,14 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+// Removed unused Dialog imports
 import {
     Table,
     TableBody,
@@ -26,8 +19,8 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { createClient } from '@/lib/supabase/client';
-import { signupSchema } from '@/lib/validations';
-import { UserPlus, Users, Mail, Loader2 } from 'lucide-react';
+import { Users, Mail, Loader2 } from 'lucide-react';
+import { InviteUserModal } from '@/components/shared/InviteUserModal';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import type { Profile } from '@/types';
@@ -35,9 +28,7 @@ import type { Profile } from '@/types';
 export default function ManageMurabbisPage() {
     const [murabbis, setMurabbis] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(true);
-    const [creating, setCreating] = useState(false);
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [form, setForm] = useState({ full_name: '', email: '', password: '' });
+    const [showModal, setShowModal] = useState(false);
     const supabase = createClient();
 
     const fetchMurabbis = async () => {
@@ -55,44 +46,6 @@ export default function ManageMurabbisPage() {
         fetchMurabbis();
     }, []);
 
-    const createMurabbi = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setCreating(true);
-
-        const result = signupSchema.safeParse({
-            ...form,
-            role: 'murabbi',
-        });
-
-        if (!result.success) {
-            toast.error(result.error.issues[0].message);
-            setCreating(false);
-            return;
-        }
-
-        try {
-            const res = await fetch('/api/admin/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...form, role: 'murabbi' }),
-            });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Failed to create Murabbi');
-            }
-
-            toast.success('Murabbi account created successfully!');
-            setForm({ full_name: '', email: '', password: '' });
-            setDialogOpen(false);
-            fetchMurabbis();
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Failed to create account');
-        } finally {
-            setCreating(false);
-        }
-    };
-
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -102,63 +55,15 @@ export default function ManageMurabbisPage() {
                         Create and manage mentor accounts
                     </p>
                 </div>
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="gap-2">
-                            <UserPlus size={16} />
-                            Create Murabbi
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Create Murabbi Account</DialogTitle>
-                            <DialogDescription>
-                                Create a new mentor account. They will receive login credentials via email.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={createMurabbi} className="space-y-4 mt-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
-                                <Input
-                                    id="name"
-                                    placeholder="Enter full name"
-                                    value={form.full_name}
-                                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="murabbi@example.com"
-                                    value={form.email}
-                                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="Min 6 characters"
-                                    value={form.password}
-                                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <Button type="submit" className="w-full" disabled={creating}>
-                                {creating ? (
-                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</>
-                                ) : (
-                                    'Create Account'
-                                )}
-                            </Button>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                <Button onClick={() => setShowModal(true)} className="gap-2">
+                    <Users size={16} /> Add Murrabi
+                </Button>
+                <InviteUserModal
+                    open={showModal}
+                    onOpenChange={setShowModal}
+                    defaultRole="murabbi"
+                    onSuccess={() => { setShowModal(false); fetchMurabbis(); }}
+                />
             </div>
 
             <motion.div
@@ -182,7 +87,7 @@ export default function ManageMurabbisPage() {
                             <div className="text-center py-12 text-muted-foreground">
                                 <Users size={40} className="mx-auto mb-3 opacity-30" />
                                 <p className="font-medium">No Murabbis Yet</p>
-                                <p className="text-sm mt-1">Create the first Murabbi account to get started.</p>
+                                <p className="text-sm mt-1">Invite the first Murabbi below to get started.</p>
                             </div>
                         ) : (
                             <Table>

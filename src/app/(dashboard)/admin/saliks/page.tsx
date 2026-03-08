@@ -27,12 +27,14 @@ import { Users, UserCheck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import type { Profile } from '@/types';
+import { InviteUserModal } from '@/components/shared/InviteUserModal';
 
 export default function ManageSaliksPage() {
     const [saliks, setSaliks] = useState<(Profile & { murabbi_name?: string; mapping_id?: string })[]>([]);
     const [murabbis, setMurabbis] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(true);
     const [assigning, setAssigning] = useState<string | null>(null);
+    const [showModal, setShowModal] = useState(false);
     const supabase = createClient();
 
     const fetchData = async () => {
@@ -96,11 +98,22 @@ export default function ManageSaliksPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold">Manage Saliks</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                    View all Saliks and reassign to Murabbis
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">Manage Saliks</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                        View all Saliks and reassign to Murabbis
+                    </p>
+                </div>
+                <Button onClick={() => setShowModal(true)} className="gap-2">
+                    <Users size={16} /> Add Salik
+                </Button>
+                <InviteUserModal
+                    open={showModal}
+                    onOpenChange={setShowModal}
+                    defaultRole="salik"
+                    onSuccess={() => { setShowModal(false); fetchData(); }}
+                />
             </div>
 
             <motion.div
@@ -124,6 +137,7 @@ export default function ManageSaliksPage() {
                             <div className="text-center py-12 text-muted-foreground">
                                 <Users size={40} className="mx-auto mb-3 opacity-30" />
                                 <p className="font-medium">No Saliks Registered</p>
+                                <p className="text-sm mt-1">Invite the first Salik below to get started.</p>
                             </div>
                         ) : (
                             <Table>

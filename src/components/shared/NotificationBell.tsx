@@ -4,6 +4,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,19 +17,28 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { createClient } from '@/lib/supabase/client';
-import type { Notification } from '@/types';
+import type { Notification, UserRole } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { MdAccessAlarm, MdWarningAmber, MdAutoAwesome, MdPushPin, MdEmojiEvents, MdOutlineArticle, MdOutlineAnnouncement, MdInfoOutline, MdNotificationsActive } from 'react-icons/md';
+import Link from 'next/link';
 
 export function NotificationBell() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [animateBell, setAnimateBell] = useState(false);
+    const [role, setRole] = useState<UserRole | null>(null);
     const supabase = createClient();
+    const router = useRouter();
 
     useEffect(() => {
         const fetchNotifications = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
+
+            // Fetch role for 'See all' link
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+            if (profile) setRole(profile.role as UserRole);
 
             const { data, count } = await supabase
                 .from('notifications')
@@ -40,11 +50,36 @@ export function NotificationBell() {
 
             if (data) setNotifications(data);
             if (count !== null) setUnreadCount(count);
+
+            // REALTIME SUBSCRIPTION
+            const channel = supabase.channel('realtime_notifications')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${user.id}`
+                    },
+                    (payload) => {
+                        const newNotif = payload.new as Notification;
+                        setNotifications(prev => [newNotif, ...prev].slice(0, 10));
+                        setUnreadCount(prev => prev + 1);
+                        setAnimateBell(true);
+                        setTimeout(() => setAnimateBell(false), 800);
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         };
 
         fetchNotifications();
-        // Poll every 30 seconds
-        const interval = setInterval(fetchNotifications, 30000);
+
+        // 60s fallback polling just in case WS drops silently
+        const interval = setInterval(fetchNotifications, 60000);
         return () => clearInterval(interval);
     }, [supabase]);
 
@@ -56,6 +91,13 @@ export function NotificationBell() {
 
         setNotifications((prev) => prev.filter((n) => n.id !== id));
         setUnreadCount((prev) => Math.max(0, prev - 1));
+    };
+
+    const handleActionClick = async (notif: Notification) => {
+        await markAsRead(notif.id);
+        if (notif.action_url) {
+            router.push(notif.action_url);
+        }
     };
 
     const markAllRead = async () => {
@@ -74,21 +116,33 @@ export function NotificationBell() {
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'reminder':
-                return '⏰';
+                return <MdAccessAlarm className="text-blue-500 text-lg mt-0.5 flex-shrink-0" />;
             case 'alert':
-                return '⚠️';
+                return <MdWarningAmber className="text-amber-500 text-lg mt-0.5 flex-shrink-0" />;
             case 'motivational':
-                return '✨';
+                return <MdAutoAwesome className="text-purple-500 text-lg mt-0.5 flex-shrink-0" />;
+            case 'achievement':
+                return <MdEmojiEvents className="text-yellow-500 text-lg mt-0.5 flex-shrink-0" />;
+            case 'summary':
+                return <MdOutlineArticle className="text-indigo-500 text-lg mt-0.5 flex-shrink-0" />;
+            case 'action':
+                return <MdNotificationsActive className="text-emerald-500 text-lg mt-0.5 flex-shrink-0" />;
+            case 'broadcast':
+                return <MdOutlineAnnouncement className="text-rose-500 text-lg mt-0.5 flex-shrink-0" />;
+            case 'info':
+                return <MdInfoOutline className="text-blue-400 text-lg mt-0.5 flex-shrink-0" />;
             default:
-                return '📌';
+                return <MdPushPin className="text-muted-foreground text-lg mt-0.5 flex-shrink-0" />;
         }
     };
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                    <Bell size={20} className="text-muted-foreground" />
+                <Button variant="ghost" size="icon" className="relative group">
+                    <motion.div animate={animateBell ? { rotate: [0, -15, 15, -15, 15, 0] } : {}}>
+                        <Bell size={20} className={cn("text-muted-foreground transition-colors group-hover:text-foreground", animateBell && "text-primary")} />
+                    </motion.div>
                     <AnimatePresence>
                         {unreadCount > 0 && (
                             <motion.div
@@ -108,52 +162,62 @@ export function NotificationBell() {
                     </AnimatePresence>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel className="flex items-center justify-between">
-                    <span>Notifications</span>
+            <DropdownMenuContent align="end" className="w-80 max-h-[500px] flex flex-col p-0">
+                <DropdownMenuLabel className="flex items-center justify-between p-4 pb-2 border-b">
+                    <span className="font-semibold text-base">Notifications</span>
                     {unreadCount > 0 && (
                         <button
                             onClick={markAllRead}
-                            className="text-xs text-primary hover:underline font-normal"
+                            className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
                         >
                             Mark all read
                         </button>
                     )}
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {notifications.length === 0 ? (
-                    <div className="py-8 text-center text-sm text-muted-foreground">
-                        <Bell size={24} className="mx-auto mb-2 opacity-30" />
-                        No new notifications
-                    </div>
-                ) : (
-                    notifications.map((notif) => (
-                        <DropdownMenuItem
-                            key={notif.id}
-                            className="flex items-start gap-3 py-3 cursor-pointer"
-                            onClick={() => markAsRead(notif.id)}
-                        >
-                            <span className="text-lg mt-0.5 flex-shrink-0">
+
+                <div className="flex-1 overflow-y-auto w-full">
+                    {notifications.length === 0 ? (
+                        <div className="py-12 text-center text-sm text-muted-foreground">
+                            <Bell size={32} className="mx-auto mb-3 opacity-20" />
+                            No new notifications
+                        </div>
+                    ) : (
+                        notifications.map((notif) => (
+                            <DropdownMenuItem
+                                key={notif.id}
+                                className="flex items-start gap-4 p-4 cursor-pointer focus:bg-muted/50 transition-colors border-b last:border-0"
+                                onClick={() => handleActionClick(notif)}
+                            >
                                 {getNotificationIcon(notif.type)}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium leading-tight">
-                                    {notif.title}
-                                </p>
-                                <p
-                                    className={cn(
-                                        'text-xs mt-0.5 leading-snug',
-                                        'text-muted-foreground'
-                                    )}
-                                >
-                                    {notif.message}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground/60 mt-1">
-                                    {new Date(notif.created_at).toLocaleDateString()}
-                                </p>
-                            </div>
-                        </DropdownMenuItem>
-                    ))
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold leading-tight text-foreground">
+                                        {notif.title}
+                                    </p>
+                                    <p
+                                        className={cn(
+                                            'text-xs mt-1 leading-relaxed line-clamp-2',
+                                            'text-muted-foreground'
+                                        )}
+                                    >
+                                        {notif.message}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground/50 mt-2 font-medium">
+                                        {new Date(notif.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                    </p>
+                                </div>
+                            </DropdownMenuItem>
+                        ))
+                    )}
+                </div>
+
+                {role && (role === 'salik' || role === 'murabbi') && (
+                    <div className="p-2 border-t mt-auto shrink-0 bg-muted/20">
+                        <Button variant="ghost" size="sm" className="w-full text-xs font-medium text-muted-foreground hover:text-foreground justify-center hover:bg-transparent" asChild>
+                            <Link href={`/${role}/notifications`}>
+                                See all notifications &rarr;
+                            </Link>
+                        </Button>
+                    </div>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>

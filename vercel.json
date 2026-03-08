@@ -1,0 +1,20 @@
+{
+    "crons": [
+        {
+            "path": "/api/cron/daily-reminder",
+            "schedule": "0 17 * * *"
+        },
+        {
+            "path": "/api/cron/murrabi-reminder",
+            "schedule": "30 17 * * *"
+        },
+        {
+            "path": "/api/cron/missed-days-check",
+            "schedule": "0 3 * * *"
+        },
+        {
+            "path": "/api/cron/chilla-milestones",
+            "schedule": "0 1 * * *"
+        }
+    ]
+}

@@ -9,6 +9,10 @@ export interface Profile {
     email: string;
     full_name: string;
     role: UserRole;
+    university?: string;
+    degree?: string;
+    mobile_number?: string;
+    is_profile_complete: boolean;
     avatar_url?: string;
     created_at: string;
     updated_at: string;
@@ -24,39 +28,41 @@ export interface SalikMurabbiMap {
     murabbi?: Profile;
 }
 
-export interface TaskTemplate {
+export interface HabitTemplate {
     id: string;
-    murabbi_id: string;
-    category: TaskCategory;
-    task_name: string;
-    description?: string;
-    has_numeric_input: boolean;
-    numeric_label?: string;
-    weight: number;
-    is_active: boolean;
+    name: string;
+    category: HabitCategory;
+    sub_category?: string;
+    input_type: HabitInputType;
+    count_options?: number[] | null;
+    is_default: boolean;
+    murabbi_id?: string | null;
+    sort_order: number;
     created_at: string;
-    updated_at: string;
 }
 
-export type TaskCategory =
-    | 'faraiz'
+export type HabitCategory =
+    | 'prayers'
+    | 'quran'
+    | 'azkar'
     | 'nawafil'
-    | 'tasbeeh'
-    | 'tilawat'
-    | 'habit_tracking'
     | 'prohibitions'
-    | 'study'
-    | 'sleep_tracking';
+    | 'book_reading'
+    | 'bed_timings';
 
-export const TASK_CATEGORIES: { value: TaskCategory; label: string; icon: string }[] = [
-    { value: 'faraiz', label: 'Faraiz (Obligations)', icon: '🕌' },
-    { value: 'nawafil', label: 'Nawafil (Voluntary)', icon: '🤲' },
-    { value: 'tasbeeh', label: 'Tasbeeh (Remembrance)', icon: '📿' },
-    { value: 'tilawat', label: 'Tilawat (Recitation)', icon: '📖' },
-    { value: 'habit_tracking', label: 'Habit Tracking', icon: '✅' },
-    { value: 'prohibitions', label: 'Prohibitions', icon: '🚫' },
-    { value: 'study', label: 'Study', icon: '📚' },
-    { value: 'sleep_tracking', label: 'Sleep Tracking', icon: '🌙' },
+export type HabitInputType = 'checkbox' | 'count_dropdown' | 'rakaat_dropdown' | 'time_picker';
+
+import type { IconType } from 'react-icons';
+import { FaMosque, FaBookOpen, FaRecycle, FaHands, FaBan, FaBook, FaMoon } from 'react-icons/fa';
+
+export const HABIT_CATEGORIES: { value: HabitCategory; label: string; icon: IconType }[] = [
+    { value: 'prayers', label: 'Prayers', icon: FaMosque },
+    { value: 'quran', label: 'Quran Recitation', icon: FaBookOpen },
+    { value: 'azkar', label: 'Azkar', icon: FaRecycle },
+    { value: 'nawafil', label: 'Nawafil', icon: FaHands },
+    { value: 'prohibitions', label: 'Prohibitions', icon: FaBan },
+    { value: 'book_reading', label: 'Book Reading', icon: FaBook },
+    { value: 'bed_timings', label: 'Bed Timings', icon: FaMoon },
 ];
 
 export interface DailyReport {
@@ -72,10 +78,10 @@ export interface DailyReport {
 export interface ReportItem {
     id: string;
     report_id: string;
-    template_id: string;
-    is_completed: boolean;
-    numeric_value?: number;
-    task_template?: TaskTemplate;
+    habit_id: string;
+    status: 'completed' | 'missed' | 'unanswered';
+    input_value?: any;
+    habit_template?: HabitTemplate;
 }
 
 export interface AIConversation {
@@ -93,14 +99,19 @@ export interface Notification {
     message: string;
     type: NotificationType;
     is_read: boolean;
+    action_url?: string | null;
     created_at: string;
 }
 
 export type NotificationType =
     | 'reminder'
     | 'alert'
+    | 'achievement'
+    | 'summary'
+    | 'action'
     | 'motivational'
-    | 'system';
+    | 'info'
+    | 'broadcast';
 
 export interface ActivityLog {
     id: string;
@@ -131,17 +142,19 @@ export interface ChillaSummary {
 // ── Dashboard Stats ──
 export interface AdminStats {
     totalSaliks: number;
-    activeStreaks: number;
+    activeChillas: number;
     missedReports: number;
     averagePerformance: number;
+    pendingInvites: number;
 }
 
 export interface MurabbiStats {
     assignedSaliks: number;
     nonSubmitted: number;
     lowPerformance: number;
-    brokenStreaks: number;
+    submittedToday: number;
 }
+
 
 export interface SalikStats {
     todayCompletion: number;
