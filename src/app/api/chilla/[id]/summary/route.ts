@@ -5,8 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { notifyChillaSummaryDelivered } from '@/lib/services/notifications';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         const { data, error } = await supabase
             .from('chilla_summaries')
             .select('*')
-            .eq('chilla_record_id', params.id)
+            .eq('chilla_record_id', id)
             .single();
 
         // It is perfectly normal to not have a summary yet
@@ -28,8 +29,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,7 +42,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         const { data: chillaRecord } = await supabase
             .from('chilla_records')
             .select('salik_id, murabbi_id, chilla_number, start_date, end_date')
-            .eq('id', params.id)
+            .eq('id', id)
             .single();
 
         if (!chillaRecord) return NextResponse.json({ error: 'Record not found' }, { status: 404 });
@@ -53,7 +55,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         const isDelivered = body.is_delivered === true;
 
         const payload = {
-            chilla_record_id: params.id,
+            chilla_record_id: id,
             salik_id: chillaRecord.salik_id,
             murabbi_id: chillaRecord.murabbi_id,
             start_date: chillaRecord.start_date,
@@ -79,7 +81,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         const { data: existingSummary } = await supabase
             .from('chilla_summaries')
             .select('id')
-            .eq('chilla_record_id', params.id)
+            .eq('chilla_record_id', id)
             .single();
 
         let updatedSummary;

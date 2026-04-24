@@ -4,8 +4,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
                 murabbi:profiles!murabbi_id(full_name),
                 chilla_summaries(*)
             `)
-            .eq('id', params.id)
+            .eq('id', id)
             .single();
 
         if (chillaError || !chilla) throw chillaError || new Error('Chilla not found');

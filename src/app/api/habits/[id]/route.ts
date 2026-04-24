@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { habitSchema } from '@/lib/validations';
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,7 +20,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         const { data: existingHabit } = await supabase
             .from('habit_templates')
             .select('murabbi_id, is_default')
-            .eq('id', params.id)
+            .eq('id', id)
             .single();
 
         if (!existingHabit) {
@@ -33,7 +34,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         const { data, error } = await supabase
             .from('habit_templates')
             .update(result.data)
-            .eq('id', params.id)
+            .eq('id', id)
             .select()
             .single();
 
@@ -47,8 +48,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE a habit from the pool
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,7 +59,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         const { data: existingHabit } = await supabase
             .from('habit_templates')
             .select('murabbi_id, is_default')
-            .eq('id', params.id)
+            .eq('id', id)
             .single();
 
         if (!existingHabit) return NextResponse.json({ error: 'Habit not found' }, { status: 404 });
@@ -70,7 +72,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         const { count: reportItemsCount } = await supabase
             .from('report_items')
             .select('id', { count: 'exact', head: true })
-            .eq('habit_id', params.id);
+            .eq('habit_id', id);
 
         if (reportItemsCount && reportItemsCount > 0) {
             return NextResponse.json({ error: 'Habit cannot be deleted because it has historical check-ins. You can toggle it off instead.' }, { status: 400 });
@@ -79,7 +81,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         const { error } = await supabase
             .from('habit_templates')
             .delete()
-            .eq('id', params.id);
+            .eq('id', id);
 
         if (error) throw error;
 
@@ -91,8 +93,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 }
 
 // PATCH - Global Toggle for all associated Saliks
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const supabase = await createServerSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -122,7 +125,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
             .upsert(
                 salikIds.map(salikId => ({
                     salik_id: salikId,
-                    habit_id: params.id,
+                    habit_id: id,
                     is_active: body.is_active,
                     assigned_by_murabbi_id: user.id
                 })),

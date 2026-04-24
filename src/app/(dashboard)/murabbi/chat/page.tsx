@@ -17,7 +17,15 @@ export default function MurabbiChatPage() {
                 </p>
             </div>
             <div className="bg-card rounded-xl border shadow-sm overflow-hidden h-[700px]">
-                <ChatInterface />
+                <ChatInterface 
+                    role="murabbi" 
+                    suggestions={[
+                        "How do I gently motivate a Salik who is missing prayers?", 
+                        "What is a good way to encourage Quran reading?", 
+                        "How do I address a sudden drop in daily adherence?", 
+                        "What are some Prophetic tips for consistency?"
+                    ]} 
+                />
             </div>
         </div>
     );
